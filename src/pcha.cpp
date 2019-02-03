@@ -70,7 +70,6 @@ void PCHA256::initializate() {
 	if (this->padding != NULL)
 		delete [] this->padding;
 
-
 	this->padding = new char[PCHA256_CHAR_BLOCK_SIZE * 2];
 
 	this->createPadding();
@@ -130,10 +129,11 @@ void PCHA256::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
-	for (uint32 i = 0; i < PCHA256_INT_DIGEST_SIZE; i++) {
-		memcpy(&this->current_chunk[i], &buffer[index], sizeof(uint32));
-		index += sizeof(uint32);
-	}
+	memcpy(
+		this->current_chunk,
+		&buffer[index],
+		sizeof(this->current_chunk)
+	);
 }
 
 void PCHA256::workCurrentBlock() {
@@ -172,12 +172,11 @@ void PCHA256::workCurrentBlock() {
 }
 
 void PCHA256::getHash(char * result) {
-	uint32 index = 0;
-
-	for (uint32 i = 0; i < PCHA256_INT_DIGEST_SIZE; i++) {
-		memcpy( &result[index], &this->message_hash[i], sizeof(uint32));
-		index += sizeof(uint32);
-	}
+	memcpy(
+		result,
+		this->message_hash,
+		sizeof(this->message_hash)
+	);
 }
 
 void PCHA256::digest(char * result, char * message, uint64 message_len) {
@@ -245,10 +244,18 @@ PCHA512::PCHA512() {
 void PCHA512::initializate() {
 
 	// Reset hash
-	memcpy(this->message_hash, this->initial_states, PCHA512_CHAR_DIGEST_SIZE);
+	memcpy(
+		this->message_hash,
+		this->initial_states,
+		PCHA512_CHAR_DIGEST_SIZE
+	);
 
 	// Fill with 0s
-	memset(this->current_chunk, PCHA512_INT_DIGEST_SIZE, 0);
+	memset(
+		this->current_chunk,
+		PCHA512_INT_DIGEST_SIZE,
+		0
+	);
 
 	// Delete padding if exists
 
@@ -272,7 +279,7 @@ void PCHA512::createPadding() {
 	this->message_full_length = length + padLength + sizeof(uint64);
 
 	char * unpackedLength = new char[8];
-	memcpy( unpackedLength, &length, sizeof(uint64));
+	memcpy(unpackedLength, &length, sizeof(uint64));
 
 	uint64 trashLength = length - padIndex;
 
@@ -315,10 +322,11 @@ void PCHA512::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
-	for (uint32 i = 0; i < PCHA512_INT_DIGEST_SIZE; i++) {
-		memcpy(&this->current_chunk[i], &buffer[index], sizeof(uint32));
-		index += sizeof(uint32);
-	}
+	memcpy(
+		this->current_chunk,
+		&buffer[index],
+		sizeof(this->current_chunk)
+	);
 }
 
 void PCHA512::workCurrentBlock() {
@@ -357,13 +365,11 @@ void PCHA512::workCurrentBlock() {
 }
 
 void PCHA512::getHash(char * result) {
-
-	uint64 index = 0;
-
-	for (uint64 i = 0; i < PCHA512_INT_DIGEST_SIZE; i++) {
-		memcpy(&result[index], &this->message_hash[i], sizeof(uint64));
-		index += sizeof(uint64);
-	}
+	memcpy(
+		result,
+		this->message_hash,
+		sizeof(this->message_hash)
+	);
 }
 
 void PCHA512::digest(char * result, char * message, uint64 message_len) {
