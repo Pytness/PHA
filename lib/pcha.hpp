@@ -32,10 +32,21 @@ typedef unsigned long long uint64;
 #define PCHA512_S2(x) (PCHA_ROTR(x,  60) ^ PCHA_ROTR(x, 17) ^ PCHA_ROTR(x, 41))
 #define PCHA512_S3(x) (PCHA_ROTR(x,  54) ^ PCHA_ROTR(x, 22) ^ PCHA_ROTR(x, 36))
 
-class PCHA256 {
+class PCHA {
+	protected:
+		uint32 digest_size = 0;
+
+	public:
+		PCHA();
+		virtual void digest(char * result, char * message, uint64 message_len);
+		virtual void hexdigest(char * hexresult, char * message, uint64 message_len);
+		virtual uint32 getDigestSize();
+};
+
+class PCHA256 : public PCHA {
 	private:
-		const static uint32 initial_states[8];
-		const static uint32 round_states[64];
+		static const uint32 initial_states[8];
+		static const uint32 round_states[64];
 
 		uint32 current_chunk[PCHA256_INT_DIGEST_SIZE];
 		uint32 message_hash[PCHA256_INT_DIGEST_SIZE];
@@ -54,14 +65,15 @@ class PCHA256 {
 
 	public:
 		PCHA256();
+
 		void digest(char * result, char * message, uint64 message_len);
 		void hexdigest(char * hexresult, char * message, uint64 message_len);
 };
 
-class PCHA512 {
+class PCHA512 : public PCHA {
 	private:
-		const static uint64 initial_states[8];
-		const static uint64 round_states[64];
+		static const uint64 initial_states[8];
+		static const uint64 round_states[64];
 
 		uint64 current_chunk[PCHA512_INT_DIGEST_SIZE];
 		uint64 message_hash[PCHA512_INT_DIGEST_SIZE];
@@ -80,6 +92,7 @@ class PCHA512 {
 
 	public:
 		PCHA512();
+
 		void digest(char * result, char * message, uint64 message_len);
 		void hexdigest(char * hexresult, char * message, uint64 message_len);
 };

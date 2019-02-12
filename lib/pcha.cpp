@@ -2,25 +2,23 @@
 #include <string.h>
 #include "pcha.hpp"
 
+// PCHA
 
-/*
-	This hash function use little endian
-*/
+// const uint32 PCHA::digest_size = 0;
+
+PCHA::PCHA() {};
+
+void PCHA::digest(char * hexresult, char * message, uint64 message_len) {};
+void PCHA::hexdigest(char * hexresult, char * message, uint64 message_len) {};
+
+uint32 PCHA::getDigestSize() {
+	return this->digest_size;
+}
 
 
-/*
-	Initial states and round states are generate with:
+// PCHA256
 
-		//being 'a' the state and 'b' a prime
-		a**2 = b**2 + b**2
-
-		// Transform double to 32bit integer
-		a *= 0x100000000
-
-	primes used on initial_statess: 7..31
-	primes used on round_states: 37..379
-*/
-
+// const uint32 PCHA256::digest_size = PCHA256_CHAR_DIGEST_SIZE;
 
 const uint32 PCHA256::initial_states[8] = {
 	0xe6454cd7, 0x8e6ce677, 0x6280b347, 0x0aa84ce7,
@@ -48,6 +46,7 @@ const uint32 PCHA256::round_states[64] = {
 
 PCHA256::PCHA256() {
 	this->padding = NULL;
+	this->digest_size = PCHA256_CHAR_DIGEST_SIZE;
 }
 
 void PCHA256::initializate() {
@@ -211,6 +210,8 @@ void PCHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
 
 // PCHA512
 
+// const uint32 PCHA512::digest_size = PCHA512_CHAR_DIGEST_SIZE;
+
 const uint64 PCHA512::initial_states[8] = {
 	0xe6454cd7aa297f3c, 0x8e6ce677791ca35f,
 	0x6280b34760963571, 0x0aa84ce72f895993,
@@ -239,7 +240,9 @@ const uint64 PCHA512::round_states[64] = {
 
 PCHA512::PCHA512() {
 	this->padding = NULL;
+	this->digest_size = PCHA512_CHAR_DIGEST_SIZE;
 }
+
 
 void PCHA512::initializate() {
 
