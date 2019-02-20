@@ -75,6 +75,15 @@ static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 
 int main(int argc, char *argv[]) {
 
+	unsigned long int currentSize = CHUNK_SIZE;
+	unsigned long int i = 0;
+	unsigned long int inputLength = 0;
+
+	PCHA * pcha = NULL;
+	char * result = NULL;
+
+	int displayLength = 0;
+
 	Arguments arguments = def_arguments;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
@@ -85,10 +94,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-
-	unsigned long int currentSize = CHUNK_SIZE;
-	unsigned long int i = 0;
-	unsigned long int inputLength = 0;
 
 	if (arguments.userInput == 0) {
 		arguments.userInput = new char[currentSize];
@@ -112,8 +117,6 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	PCHA * pcha = NULL;
-	char * result = NULL;
 
 	if (arguments.use512Bits) {
 		pcha = new PCHA512();
@@ -121,15 +124,16 @@ int main(int argc, char *argv[]) {
 		pcha = new PCHA256();
 	}
 
-	int displayLength = 0;
+	displayLength = pcha->getDigestSize();
 
 	if (arguments.displayRaw) {
-		displayLength = pcha->getDigestSize();
 		result = new char[displayLength];
 		pcha->digest(result, arguments.userInput, inputLength);
+
 	} else {
-		displayLength = pcha->getDigestSize() * 2;
-		result = new char[displayLength + 1];
+		displayLength = displayLength * 2 + 1;
+		result = new char[displayLength];
+
 		pcha->hexdigest(result, arguments.userInput, inputLength);
 
 		if (arguments.capitalize) {
@@ -144,12 +148,10 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < displayLength; i++)
 		putc(result[i], stdout);
 
+	// Append new line if prettify is set
 
-	// Append new line if prettify
-
-	if (arguments.prettify) {
-		printf("\n");
-	}
+	if (arguments.prettify)
+		putc('\n', stdout);
 
 	return 0;
 }

@@ -2,9 +2,7 @@
 #include <string.h>
 #include "pcha.hpp"
 
-// PCHA
-
-// const uint32 PCHA::digest_size = 0;
+// PCHA (generic class)
 
 PCHA::PCHA() {};
 
@@ -18,7 +16,7 @@ uint32 PCHA::getDigestSize() {
 
 // PCHA256
 
-// const uint32 PCHA256::digest_size = PCHA256_CHAR_DIGEST_SIZE;
+// Define initial and round constants for PCHA256 bits
 
 const uint32 PCHA256::initial_states[8] = {
 	0xe6454cd7, 0x8e6ce677, 0x6280b347, 0x0aa84ce7,
@@ -58,7 +56,7 @@ void PCHA256::initializate() {
 		PCHA256_CHAR_DIGEST_SIZE
 	);
 
-	// Fill with 0s
+	// Fill current chunk with 0s
 	memset(
 		this->current_chunk,
 		PCHA256_INT_DIGEST_SIZE,
@@ -76,10 +74,13 @@ void PCHA256::initializate() {
 
 void PCHA256::createPadding() {
 	uint64 length = this->message_length;
+	uint64 padLength = PCHA256_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64)) % PCHA256_CHAR_BLOCK_SIZE
+	) ;
 
-	uint64 padLength = PCHA256_CHAR_BLOCK_SIZE - ((length + sizeof(uint64)) % PCHA256_CHAR_BLOCK_SIZE) ;
+	uint64 padIndex = (length / PCHA256_CHAR_DIGEST_SIZE) *
+		PCHA256_CHAR_DIGEST_SIZE;
 
-	uint64 padIndex = (length / PCHA256_CHAR_DIGEST_SIZE) * PCHA256_CHAR_DIGEST_SIZE;
 	this->padIndex = padIndex;
 
 	this->message_full_length = length + padLength + sizeof(uint64);
@@ -120,7 +121,8 @@ void PCHA256::createPadding() {
 void PCHA256::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
-
+	
+	// Get chunk either from padded message or message
 	if (index < this->padIndex) {
 		buffer = this->current_message;
 	} else {
@@ -128,6 +130,8 @@ void PCHA256::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
+	
+	// copy chunk
 	memcpy(
 		this->current_chunk,
 		&buffer[index],
@@ -150,7 +154,7 @@ void PCHA256::workCurrentBlock() {
 	// Mix registers
 	for (uint32 r = 0; r < PCHA256_ROUNDS_PER_BLOCK; r++) {
 		ra += rb;
-		rb += rc + this->round_states[rc % 64];
+		rb += rc + this->round_states[rc & 0x40];
 		rc += rd;
 		rd += PCHA256_S1(re);
 		re += rf;
@@ -171,6 +175,7 @@ void PCHA256::workCurrentBlock() {
 }
 
 void PCHA256::getHash(char * result) {
+	// Copy hash into result
 	memcpy(
 		result,
 		this->message_hash,
@@ -184,7 +189,8 @@ void PCHA256::digest(char * result, char * message, uint64 message_len) {
 	this->message_length = message_len;
 
 	this->initializate();
-
+	
+	// for each chunk
 	for (uint64 i = 0; i < this->message_full_length; i += PCHA256_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
@@ -204,13 +210,12 @@ void PCHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
 		snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 	}
 
-	// No longer need tempResult
 	delete [] tempResult;
 }
 
 // PCHA512
 
-// const uint32 PCHA512::digest_size = PCHA512_CHAR_DIGEST_SIZE;
+// define initial and round constants for PCHA512
 
 const uint64 PCHA512::initial_states[8] = {
 	0xe6454cd7aa297f3c, 0x8e6ce677791ca35f,
@@ -274,18 +279,21 @@ void PCHA512::initializate() {
 void PCHA512::createPadding() {
 	uint64 length = this->message_length;
 
-	uint64 padLength = PCHA512_CHAR_BLOCK_SIZE - ((length + sizeof(uint64)) % PCHA512_CHAR_BLOCK_SIZE) ;
+	uint64 padLength = PCHA512_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64)) % PCHA512_CHAR_BLOCK_SIZE
+	) ;
 
-	uint64 padIndex = (length / PCHA512_CHAR_DIGEST_SIZE) * PCHA512_CHAR_DIGEST_SIZE;
+	uint64 padIndex = (length / PCHA512_CHAR_DIGEST_SIZE) *
+		PCHA512_CHAR_DIGEST_SIZE;
+
 	this->padIndex = padIndex;
 
 	this->message_full_length = length + padLength + sizeof(uint64);
 
-	char * unpackedLength = new char[8];
+	char * unpackedLength = new char[sizeof(uint64)];
 	memcpy(unpackedLength, &length, sizeof(uint64));
 
 	uint64 trashLength = length - padIndex;
-
 
 	// Copy 'trash' to padding
 	memcpy(
@@ -298,10 +306,11 @@ void PCHA512::createPadding() {
 	memcpy(
 		&this->padding[trashLength],
 		unpackedLength,
-		8
+		sizeof(uint64)
 	);
 
-	trashLength += 8;
+	// Count appended bytes
+	trashLength += sizeof(uint64);
 
 	// Fill padding left with 0s
 	memset(
@@ -310,7 +319,6 @@ void PCHA512::createPadding() {
 		0
 	);
 
-	// No longer need unpackedLength
 	delete [] unpackedLength;
 }
 
@@ -318,6 +326,7 @@ void PCHA512::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
 
+	
 	if (index < this->padIndex) {
 		buffer = this->current_message;
 	} else {
@@ -325,6 +334,8 @@ void PCHA512::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
+
+	// Copy chunk
 	memcpy(
 		this->current_chunk,
 		&buffer[index],
@@ -368,6 +379,7 @@ void PCHA512::workCurrentBlock() {
 }
 
 void PCHA512::getHash(char * result) {
+	// Copy hash into result
 	memcpy(
 		result,
 		this->message_hash,
@@ -382,6 +394,7 @@ void PCHA512::digest(char * result, char * message, uint64 message_len) {
 
 	this->initializate();
 
+	// for each chunk
 	for (uint64 i = 0; i < this->message_full_length; i += PCHA512_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
@@ -401,6 +414,5 @@ void PCHA512::hexdigest(char * hexresult, char * message, uint64 message_len) {
 			snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 		}
 
-		// No longer need tempResult
 		delete [] tempResult;
 }
