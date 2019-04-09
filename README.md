@@ -1,24 +1,28 @@
-# PCHA
+# PHA
 
-(Pytness' Custom Hash Algorithm)
+(Pytness' Hash Algorithm)
 
 A custom hash algorithm made in c++
 
 Supports 256 bit and 512 bit digests
 
-## pchasum
+## phasum
 #### Compile
 
 ```bash
-g++ lib/pcha.cpp src/pchasum.cpp -o pchasum
+g++ lib/pha.cpp src/phasum.cpp -o phasum
+
+# or
+
+cd src; ./build.sh
 ```
 
 #### Usage
 
 ```
-$ ./pchasum --help
-Usage: pchasum [OPTION...]
-Print PCHA checksums
+$ ./phasum --help
+Usage: phasum [OPTION...]
+Print PHA checksums
 
   -a, --algorithm            256 (default), 512
   -c, --capitalize           print checksum in capital letters

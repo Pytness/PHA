@@ -1,29 +1,29 @@
 #include <stdio.h>
 #include <string.h>
-#include "pcha.hpp"
+#include "pha.hpp"
 
-// PCHA (generic class)
+// PHA (generic class)
 
-PCHA::PCHA() {};
+PHA::PHA() {};
 
-void PCHA::digest(char * hexresult, char * message, uint64 message_len) {};
-void PCHA::hexdigest(char * hexresult, char * message, uint64 message_len) {};
+void PHA::digest(char * hexresult, char * message, uint64 message_len) {};
+void PHA::hexdigest(char * hexresult, char * message, uint64 message_len) {};
 
-uint32 PCHA::getDigestSize() {
+uint32 PHA::getDigestSize() {
 	return this->digest_size;
 }
 
 
-// PCHA256
+// PHA256
 
-// Define initial and round constants for PCHA256 bits
+// Define initial and round constants for PHA256 bits
 
-const uint32 PCHA256::initial_states[8] = {
+const uint32 PHA256::initial_states[8] = {
 	0xe6454cd7, 0x8e6ce677, 0x6280b347, 0x0aa84ce7,
 	0xdebc19b7, 0x86e3b356, 0x031f19c6, 0xd732e696
 };
 
-const uint32 PCHA256::round_states[64] = {
+const uint32 PHA256::round_states[64] = {
 	0x536e4d06, 0xfb95e6a6, 0xcfa9b375, 0x77d14d15,
 	0xf40cb385, 0x704819f5, 0x445be6c5, 0xc0974d34,
 	0x68bee6d4, 0x3cd2b3a4, 0xb90e1a14, 0x6135b3b4,
@@ -42,38 +42,38 @@ const uint32 PCHA256::round_states[64] = {
 	0xb3e21bc6, 0x04314f06, 0x806cb576, 0xfca81be5
 };
 
-PCHA256::PCHA256() {
+PHA256::PHA256() {
 	this->padding = NULL;
 	this->current_chunk = NULL;
-	this->digest_size = PCHA256_CHAR_DIGEST_SIZE;
+	this->digest_size = PHA256_CHAR_DIGEST_SIZE;
 }
 
-void PCHA256::initializate() {
+void PHA256::initializate() {
 
 	// Reset hash
 	memcpy(
 		this->message_hash,
 		this->initial_states,
-		PCHA256_CHAR_DIGEST_SIZE
+		PHA256_CHAR_DIGEST_SIZE
 	);
 
 	// Delete padding if exists
 	if (this->padding != NULL)
 		delete [] this->padding;
 
-	this->padding = new char[PCHA256_CHAR_BLOCK_SIZE * 2];
+	this->padding = new char[PHA256_CHAR_BLOCK_SIZE * 2];
 
 	this->createPadding();
 }
 
-void PCHA256::createPadding() {
+void PHA256::createPadding() {
 	uint64 length = this->message_length;
-	uint64 padLength = PCHA256_CHAR_BLOCK_SIZE - (
-		(length + sizeof(uint64)) % PCHA256_CHAR_BLOCK_SIZE
+	uint64 padLength = PHA256_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64)) % PHA256_CHAR_BLOCK_SIZE
 	) ;
 
-	uint64 padIndex = (length / PCHA256_CHAR_DIGEST_SIZE) *
-		PCHA256_CHAR_DIGEST_SIZE;
+	uint64 padIndex = (length / PHA256_CHAR_DIGEST_SIZE) *
+		PHA256_CHAR_DIGEST_SIZE;
 
 	this->padIndex = padIndex;
 
@@ -112,7 +112,7 @@ void PCHA256::createPadding() {
 	delete [] unpackedLength;
 }
 
-void PCHA256::getMessageChunk(uint64 index) {
+void PHA256::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
 
@@ -127,7 +127,7 @@ void PCHA256::getMessageChunk(uint64 index) {
 	this->current_chunk = (uint32 *) &buffer[index];
 }
 
-void PCHA256::workCurrentBlock() {
+void PHA256::workCurrentBlock() {
 
 	// Define registers
 	register uint32 ra = this->current_chunk[0] + this->message_hash[0];
@@ -140,15 +140,15 @@ void PCHA256::workCurrentBlock() {
 	register uint32 rh = this->current_chunk[7] + this->message_hash[7];
 
 	// Mix registers
-	for (uint32 r = 0; r < PCHA256_ROUNDS_PER_BLOCK; r++) {
+	for (uint32 r = 0; r < PHA256_ROUNDS_PER_BLOCK; r++) {
 		ra ^= rb;
 		rb ^= rc + this->round_states[rc & 0x40];
 		rc ^= rd;
-		rd ^= PCHA256_S1(~re);
+		rd ^= PHA256_S1(~re);
 		re ^= rf;
-		rf ^= PCHA256_S2(rg);
+		rf ^= PHA256_S2(rg);
 		rg ^= rh;
-		rh ^= PCHA256_S3(~ra);
+		rh ^= PHA256_S3(~ra);
 	}
 
 	// Update hash
@@ -162,7 +162,7 @@ void PCHA256::workCurrentBlock() {
 	this->message_hash[7] += rh;
 }
 
-void PCHA256::getHash(char * result) {
+void PHA256::getHash(char * result) {
 	// Copy hash into result
 	memcpy(
 		result,
@@ -171,7 +171,7 @@ void PCHA256::getHash(char * result) {
 	);
 }
 
-void PCHA256::digest(char * result, char * message, uint64 message_len) {
+void PHA256::digest(char * result, char * message, uint64 message_len) {
 
 	this->current_message = message;
 	this->message_length = message_len;
@@ -179,7 +179,7 @@ void PCHA256::digest(char * result, char * message, uint64 message_len) {
 	this->initializate();
 
 	// for each chunk
-	for (uint64 i = 0; i < this->message_full_length; i += PCHA256_CHAR_DIGEST_SIZE) {
+	for (uint64 i = 0; i < this->message_full_length; i += PHA256_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
 	}
@@ -187,32 +187,32 @@ void PCHA256::digest(char * result, char * message, uint64 message_len) {
 	this->getHash(result);
 }
 
-void PCHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
+void PHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
 
-	char * tempResult = new char[PCHA256_CHAR_DIGEST_SIZE];
+	char * tempResult = new char[PHA256_CHAR_DIGEST_SIZE];
 
 	this->digest(tempResult, message, message_len);
 
 	// result to hex
-	for (uint32 i = 0; i < PCHA256_CHAR_DIGEST_SIZE; i++) {
+	for (uint32 i = 0; i < PHA256_CHAR_DIGEST_SIZE; i++) {
 		snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 	}
 
 	delete [] tempResult;
 }
 
-// PCHA512
+// PHA512
 
-// define initial and round constants for PCHA512
+// define initial and round constants for PHA512
 
-const uint64 PCHA512::initial_states[8] = {
+const uint64 PHA512::initial_states[8] = {
 	0xe6454cd7aa297f3c, 0x8e6ce677791ca35f,
 	0x6280b34760963571, 0x0aa84ce72f895993,
 	0xdebc19b71702eba5, 0x86e3b356e5f60fc8,
 	0x031f19c69c62c5fc, 0xd732e69683dc580d
 };
 
-const uint64 PCHA512::round_states[64] = {
+const uint64 PHA512::round_states[64] = {
 	0x536e4d063a490e41, 0xfb95e6a6093c3264, 0xcfa9b375f0b5c476, 0x77d14d15bfa8e898,
 	0xf40cb38576159ecd, 0x704819f52c825501, 0x445be6c513fbe712, 0xc0974d34ca689d46,
 	0x68bee6d4995bc169, 0x3cd2b3a480d5537b, 0xb90e1a14374209af, 0x6135b3b406352dd2,
@@ -231,26 +231,26 @@ const uint64 PCHA512::round_states[64] = {
 	0xb3e21bc6cdbdeb32, 0x04314f066ba43378, 0x806cb5762210e9ac, 0xfca81be5d87d9fe0
 };
 
-PCHA512::PCHA512() {
+PHA512::PHA512() {
 	this->padding = NULL;
 	this->current_chunk = NULL;
-	this->digest_size = PCHA512_CHAR_DIGEST_SIZE;
+	this->digest_size = PHA512_CHAR_DIGEST_SIZE;
 }
 
 
-void PCHA512::initializate() {
+void PHA512::initializate() {
 
 	// Reset hash
 	memcpy(
 		this->message_hash,
 		this->initial_states,
-		PCHA512_CHAR_DIGEST_SIZE
+		PHA512_CHAR_DIGEST_SIZE
 	);
 
 	// // Fill with 0s
 	// memset(
 	// 	this->current_chunk,
-	// 	PCHA512_INT_DIGEST_SIZE,
+	// 	PHA512_INT_DIGEST_SIZE,
 	// 	0
 	// );
 
@@ -260,20 +260,20 @@ void PCHA512::initializate() {
 		delete [] this->padding;
 	}
 
-	this->padding = new char[PCHA512_CHAR_BLOCK_SIZE * 2];
+	this->padding = new char[PHA512_CHAR_BLOCK_SIZE * 2];
 
 	this->createPadding();
 }
 
-void PCHA512::createPadding() {
+void PHA512::createPadding() {
 	uint64 length = this->message_length;
 
-	uint64 padLength = PCHA512_CHAR_BLOCK_SIZE - (
-		(length + sizeof(uint64)) % PCHA512_CHAR_BLOCK_SIZE
+	uint64 padLength = PHA512_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64)) % PHA512_CHAR_BLOCK_SIZE
 	) ;
 
-	uint64 padIndex = (length / PCHA512_CHAR_DIGEST_SIZE) *
-		PCHA512_CHAR_DIGEST_SIZE;
+	uint64 padIndex = (length / PHA512_CHAR_DIGEST_SIZE) *
+		PHA512_CHAR_DIGEST_SIZE;
 
 	this->padIndex = padIndex;
 
@@ -311,7 +311,7 @@ void PCHA512::createPadding() {
 	delete [] unpackedLength;
 }
 
-void PCHA512::getMessageChunk(uint64 index) {
+void PHA512::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
 
@@ -333,7 +333,7 @@ void PCHA512::getMessageChunk(uint64 index) {
 	// );
 }
 
-void PCHA512::workCurrentBlock() {
+void PHA512::workCurrentBlock() {
 
 	// Define registers
 	register uint64 ra = this->current_chunk[0] + this->message_hash[0];
@@ -346,15 +346,15 @@ void PCHA512::workCurrentBlock() {
 	register uint64 rh = this->current_chunk[7] + this->message_hash[7];
 
 	// Mix registers
-	for (uint64 r = 0; r < PCHA512_ROUNDS_PER_BLOCK; r++) {
+	for (uint64 r = 0; r < PHA512_ROUNDS_PER_BLOCK; r++) {
 		ra ^= rb;
 		rb ^= rc + this->round_states[rc % 64];
 		rc ^= rd;
-		rd ^= PCHA512_S1(~re);
+		rd ^= PHA512_S1(~re);
 		re ^= rf;
-		rf ^= PCHA512_S2(rg);
+		rf ^= PHA512_S2(rg);
 		rg ^= rh;
-		rh ^= PCHA512_S3(~ra);
+		rh ^= PHA512_S3(~ra);
 	}
 
 	// Update hash
@@ -368,7 +368,7 @@ void PCHA512::workCurrentBlock() {
 	this->message_hash[7] += rh;
 }
 
-void PCHA512::getHash(char * result) {
+void PHA512::getHash(char * result) {
 	// Copy hash into result
 	memcpy(
 		result,
@@ -377,7 +377,7 @@ void PCHA512::getHash(char * result) {
 	);
 }
 
-void PCHA512::digest(char * result, char * message, uint64 message_len) {
+void PHA512::digest(char * result, char * message, uint64 message_len) {
 
 	this->current_message = message;
 	this->message_length = message_len;
@@ -385,7 +385,7 @@ void PCHA512::digest(char * result, char * message, uint64 message_len) {
 	this->initializate();
 
 	// for each chunk
-	for (uint64 i = 0; i < this->message_full_length; i += PCHA512_CHAR_DIGEST_SIZE) {
+	for (uint64 i = 0; i < this->message_full_length; i += PHA512_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
 	}
@@ -393,14 +393,14 @@ void PCHA512::digest(char * result, char * message, uint64 message_len) {
 	this->getHash(result);
 }
 
-void PCHA512::hexdigest(char * hexresult, char * message, uint64 message_len) {
+void PHA512::hexdigest(char * hexresult, char * message, uint64 message_len) {
 
-		char * tempResult = new char[PCHA512_CHAR_DIGEST_SIZE];
+		char * tempResult = new char[PHA512_CHAR_DIGEST_SIZE];
 
 		this->digest(tempResult, message, message_len);
 
 		// result to hex
-		for (uint32 i = 0; i < PCHA512_CHAR_DIGEST_SIZE; i++) {
+		for (uint32 i = 0; i < PHA512_CHAR_DIGEST_SIZE; i++) {
 			snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 		}
 
