@@ -44,6 +44,7 @@ const uint32 PCHA256::round_states[64] = {
 
 PCHA256::PCHA256() {
 	this->padding = NULL;
+	this->current_chunk = NULL;
 	this->digest_size = PCHA256_CHAR_DIGEST_SIZE;
 }
 
@@ -54,13 +55,6 @@ void PCHA256::initializate() {
 		this->message_hash,
 		this->initial_states,
 		PCHA256_CHAR_DIGEST_SIZE
-	);
-
-	// Fill current chunk with 0s
-	memset(
-		this->current_chunk,
-		PCHA256_INT_DIGEST_SIZE,
-		0
 	);
 
 	// Delete padding if exists
@@ -121,7 +115,7 @@ void PCHA256::createPadding() {
 void PCHA256::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
-	
+
 	// Get chunk either from padded message or message
 	if (index < this->padIndex) {
 		buffer = this->current_message;
@@ -130,13 +124,7 @@ void PCHA256::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
-	
-	// copy chunk
-	memcpy(
-		this->current_chunk,
-		&buffer[index],
-		sizeof(this->current_chunk)
-	);
+	this->current_chunk = (uint32 *) &buffer[index];
 }
 
 void PCHA256::workCurrentBlock() {
@@ -153,14 +141,14 @@ void PCHA256::workCurrentBlock() {
 
 	// Mix registers
 	for (uint32 r = 0; r < PCHA256_ROUNDS_PER_BLOCK; r++) {
-		ra += rb;
-		rb += rc + this->round_states[rc & 0x40];
-		rc += rd;
-		rd += PCHA256_S1(re);
-		re += rf;
-		rf += PCHA256_S2(rg);
-		rg += rh;
-		rh += PCHA256_S3(~ra);
+		ra ^= rb;
+		rb ^= rc + this->round_states[rc & 0x40];
+		rc ^= rd;
+		rd ^= PCHA256_S1(~re);
+		re ^= rf;
+		rf ^= PCHA256_S2(rg);
+		rg ^= rh;
+		rh ^= PCHA256_S3(~ra);
 	}
 
 	// Update hash
@@ -189,7 +177,7 @@ void PCHA256::digest(char * result, char * message, uint64 message_len) {
 	this->message_length = message_len;
 
 	this->initializate();
-	
+
 	// for each chunk
 	for (uint64 i = 0; i < this->message_full_length; i += PCHA256_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
@@ -245,6 +233,7 @@ const uint64 PCHA512::round_states[64] = {
 
 PCHA512::PCHA512() {
 	this->padding = NULL;
+	this->current_chunk = NULL;
 	this->digest_size = PCHA512_CHAR_DIGEST_SIZE;
 }
 
@@ -258,12 +247,12 @@ void PCHA512::initializate() {
 		PCHA512_CHAR_DIGEST_SIZE
 	);
 
-	// Fill with 0s
-	memset(
-		this->current_chunk,
-		PCHA512_INT_DIGEST_SIZE,
-		0
-	);
+	// // Fill with 0s
+	// memset(
+	// 	this->current_chunk,
+	// 	PCHA512_INT_DIGEST_SIZE,
+	// 	0
+	// );
 
 	// Delete padding if exists
 
@@ -326,7 +315,7 @@ void PCHA512::getMessageChunk(uint64 index) {
 
 	char * buffer = NULL;
 
-	
+
 	if (index < this->padIndex) {
 		buffer = this->current_message;
 	} else {
@@ -334,13 +323,14 @@ void PCHA512::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
+	this->current_chunk = (uint64 *) &buffer[index];
 
-	// Copy chunk
-	memcpy(
-		this->current_chunk,
-		&buffer[index],
-		sizeof(this->current_chunk)
-	);
+	// // Copy chunk
+	// memcpy(
+	// 	this->current_chunk,
+	// 	&buffer[index],
+	// 	sizeof(this->current_chunk)
+	// );
 }
 
 void PCHA512::workCurrentBlock() {
@@ -357,14 +347,14 @@ void PCHA512::workCurrentBlock() {
 
 	// Mix registers
 	for (uint64 r = 0; r < PCHA512_ROUNDS_PER_BLOCK; r++) {
-		ra += rb;
-		rb += rc + this->round_states[rc % 64];
-		rc += rd;
-		rd += PCHA512_S1(re);
-		re += rf;
-		rf += PCHA512_S2(rg);
-		rg += rh;
-		rh += PCHA512_S3(~ra);
+		ra ^= rb;
+		rb ^= rc + this->round_states[rc % 64];
+		rc ^= rd;
+		rd ^= PCHA512_S1(~re);
+		re ^= rf;
+		rf ^= PCHA512_S2(rg);
+		rg ^= rh;
+		rh ^= PCHA512_S3(~ra);
 	}
 
 	// Update hash

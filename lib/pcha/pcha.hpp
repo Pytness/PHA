@@ -48,7 +48,7 @@ class PCHA256 : public PCHA {
 		static const uint32 initial_states[8];
 		static const uint32 round_states[64];
 
-		uint32 current_chunk[PCHA256_INT_DIGEST_SIZE];
+		uint32 * current_chunk;
 		uint32 message_hash[PCHA256_INT_DIGEST_SIZE];
 
 		uint64 message_length;
@@ -75,7 +75,7 @@ class PCHA512 : public PCHA {
 		static const uint64 initial_states[8];
 		static const uint64 round_states[64];
 
-		uint64 current_chunk[PCHA512_INT_DIGEST_SIZE];
+		uint64 * current_chunk;
 		uint64 message_hash[PCHA512_INT_DIGEST_SIZE];
 
 		uint64 message_length;
