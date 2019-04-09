@@ -1,19 +1,20 @@
 #include <string.h>
 #include <stdlib.h>
 #include <argp.h>
-#include "../lib/pcha/pcha.hpp"
+#include "../lib/pha/pha.hpp"
 
 #define CHUNK_SIZE 1024
 
-static char doc[] = "Print PCHA checksums";
+static char doc[] = "Print PHA checksums";
 static char args_doc[] = "";
+
 static struct argp_option options[] = {
-    {"algorithm",  'a', 0, OPTION_ARG_OPTIONAL, "256 (default), 512"},
-    {"capitalize", 'c', 0, OPTION_ARG_OPTIONAL, "print checksum in capital letters"},
-	{"prettify",   'p', 0, OPTION_ARG_OPTIONAL, "prettify output"},
-    {"raw", 'r', 0, OPTION_ARG_OPTIONAL, "print raw checksum instead of hex"},
-    {"input",      'i', 0, OPTION_ARG_OPTIONAL, "take input from argument"},
-    { 0 }
+	{"algorithm",  'a', 0, OPTION_ARG_OPTIONAL, "256 (default), 512"},
+	{"capitalize", 'c', 0, OPTION_ARG_OPTIONAL, "print checksum in capital letters"},
+	{"newline",    'l', 0, OPTION_ARG_OPTIONAL, "append a \\n to the output"},
+	{"raw",        'r', 0, OPTION_ARG_OPTIONAL, "print raw checksum instead of hex"},
+	{"input",      'i', 0, OPTION_ARG_OPTIONAL, "take input from argument"},
+	{ 0 }
 };
 
 typedef struct Arguments {
@@ -21,7 +22,7 @@ typedef struct Arguments {
 	bool use512Bits;
 	bool capitalize;
 	bool displayRaw;
-	bool prettify;
+	bool newline;
 	bool canExecute;
 } Arguments;
 
@@ -51,8 +52,8 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 				arguments->capitalize = true;
 				break;
 
-			case 'p':
-				arguments->prettify = true;
+			case 'l':
+				arguments->newline = true;
 				break;
 
 			case 'r':
@@ -79,7 +80,7 @@ int main(int argc, char *argv[]) {
 	unsigned long int i = 0;
 	unsigned long int inputLength = 0;
 
-	PCHA * pcha = NULL;
+	PHA * pha = NULL;
 	char * result = NULL;
 
 	int displayLength = 0;
@@ -105,7 +106,6 @@ int main(int argc, char *argv[]) {
 			arguments.userInput[i++] = ch;
 
 			if (i > currentSize) {
-				// printf("Reallocating\n");
 				currentSize += CHUNK_SIZE;
 				arguments.userInput = (char *) realloc(arguments.userInput, currentSize);
 			}
@@ -119,22 +119,22 @@ int main(int argc, char *argv[]) {
 
 
 	if (arguments.use512Bits) {
-		pcha = new PCHA512();
+		pha = new PHA512();
 	} else {
-		pcha = new PCHA256();
+		pha = new PHA256();
 	}
 
-	displayLength = pcha->getDigestSize();
+	displayLength = pha->getDigestSize();
 
 	if (arguments.displayRaw) {
 		result = new char[displayLength];
-		pcha->digest(result, arguments.userInput, inputLength);
+		pha->digest(result, arguments.userInput, inputLength);
 
 	} else {
 		displayLength = displayLength * 2 + 1;
 		result = new char[displayLength];
 
-		pcha->hexdigest(result, arguments.userInput, inputLength);
+		pha->hexdigest(result, arguments.userInput, inputLength);
 
 		if (arguments.capitalize) {
 			for (i = 0; i < displayLength; i++)
@@ -142,16 +142,15 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-
 	// Display result
 
 	for (i = 0; i < displayLength; i++)
-		putc(result[i], stdout);
+		putchar(result[i]);
 
-	// Append new line if prettify is set
+	// Append new line if newline is set
 
-	if (arguments.prettify)
-		putc('\n', stdout);
+	if (arguments.newline)
+		putchar('\n');
 
 	return 0;
 }
