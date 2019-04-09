@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string>
 #include <chrono>
-#include "../lib/pcha/pcha.hpp"
+#include "../lib/pha/pha.hpp"
 #include "../lib/sha2/sha2.hpp"
 
 using namespace std;
@@ -9,14 +9,13 @@ using namespace std;
 void testSHA256(char * input, uint length = 1, uint secs=1) {
 
 	uint count = 0;
-	char result[PCHA256_CHAR_DIGEST_SIZE] = {0};
-	PCHA256 pcha = PCHA256();
+	unsigned char result[PHA256_CHAR_DIGEST_SIZE] = {0};
 
 	auto start = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
 	do {
-		sha256(input, length, result);
+		sha256((const unsigned char *) input, length, result);
 		count += 1;
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	} while (elapsed.count() < (double) secs);
@@ -24,41 +23,41 @@ void testSHA256(char * input, uint length = 1, uint secs=1) {
 	printf("SHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
 }
 
-void testPCHA256(char * input, uint length = 1, uint secs=1) {
+void testPHA256(char * input, uint length = 1, uint secs=1) {
 
 	uint count = 0;
-	char result[PCHA256_CHAR_DIGEST_SIZE] = {0};
-	PCHA256 pcha = PCHA256();
+	char result[PHA256_CHAR_DIGEST_SIZE] = {0};
+	PHA256 pha = PHA256();
 
 	auto start = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
 	do {
-		pcha.digest(result, input, length);
+		pha.digest(result, input, length);
 		count += 1;
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	} while (elapsed.count() < (double) secs);
 
-	printf("PCHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
+	printf("PHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
 }
 
 
-void testPCHA512(char * input, uint length = 1, uint secs=1) {
+void testPHA512(char * input, uint length = 1, uint secs=1) {
 
 	uint count = 0;
-	char result[PCHA512_CHAR_DIGEST_SIZE];
-	PCHA512 pcha = PCHA512();
+	char result[PHA512_CHAR_DIGEST_SIZE];
+	PHA512 pha = PHA512();
 
 	auto start = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed;
 
 	do {
-		pcha.digest(result, input, length);
+		pha.digest(result, input, length);
 		count += 1;
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	}while (elapsed.count() < (double) secs);
 
-	printf("PCHA-512: %.15lf hashes/s\n", (double)(count) / elapsed.count());
+	printf("PHA-512: %.15lf hashes/s\n", (double)(count) / elapsed.count());
 }
 
 
@@ -82,8 +81,8 @@ int main() {
 	input = new char[length];
 
 	testSHA256(input, length, seconds);
-	testPCHA256(input, length, seconds);
-	testPCHA512(input, length, seconds);
+	testPHA256(input, length, seconds);
+	testPHA512(input, length, seconds);
 
 	delete [] input;
 
