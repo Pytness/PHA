@@ -1,9 +1,28 @@
 #include <stdio.h>
 #include <string>
 #include <chrono>
-#include "../lib/pcha.hpp"
+#include "../lib/pcha/pcha.hpp"
+#include "../lib/sha2/sha2.hpp"
 
 using namespace std;
+
+void testSHA256(char * input, uint length = 1, uint secs=1) {
+
+	uint count = 0;
+	char result[PCHA256_CHAR_DIGEST_SIZE] = {0};
+	PCHA256 pcha = PCHA256();
+
+	auto start = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed;
+
+	do {
+		sha256(input, length, result);
+		count += 1;
+		elapsed = std::chrono::high_resolution_clock::now() - start;
+	} while (elapsed.count() < (double) secs);
+
+	printf("SHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
+}
 
 void testPCHA256(char * input, uint length = 1, uint secs=1) {
 
@@ -62,6 +81,7 @@ int main() {
 
 	input = new char[length];
 
+	testSHA256(input, length, seconds);
 	testPCHA256(input, length, seconds);
 	testPCHA512(input, length, seconds);
 

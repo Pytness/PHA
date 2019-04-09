@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <argp.h>
-#include "../lib/pcha.hpp"
+#include "../lib/pcha/pcha.hpp"
 
 #define CHUNK_SIZE 1024
 
