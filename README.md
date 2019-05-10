@@ -27,8 +27,8 @@ Print PHA checksums
   -a, --algorithm            256 (default), 512
   -c, --capitalize           print checksum in capital letters
   -i, --input                take input from argument
-  -p, --prettify             prettify output
+  -l, --newline              append a \n to the output
   -r, --raw                  print raw checksum instead of hex
   -?, --help                 Give this help list
       --usage                Give a short usage message
-````
+```
