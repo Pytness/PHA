@@ -6,6 +6,8 @@ A custom hash algorithm made in c++
 
 Supports 256 bit and 512 bit digests
 
+## THIS IS A NON SECURE HASH ALGORITHM AND IT SHOULD NOT BE USED FOR ANY PRODUCTION PURPOSES
+
 ## phasum
 #### Compile
 
