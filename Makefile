@@ -1,11 +1,12 @@
-OUT		= hps phasum
-OBJS		= phasum.o hashesPerSecond.o
+OUT		= hps phasum sha2sum
+OBJS		= phasum.o sha2sum.o hashesPerSecond.o
 HASH_OBJS	= pha.o sha2.o
 HASH_SOURCES	= ./src/pha/pha.cpp ./src/sha2/sha2.cpp
 CC		= g++
 
 all: $(OBJS) $(HASH_OBJS)
-	$(CC) phasum.o pha.o sha2.o -o phasum
+	$(CC) phasum.o pha.o -o phasum
+	$(CC) sha2sum.o sha2.o -o sha2sum
 	$(CC) hashesPerSecond.o -o hps pha.o sha2.o -o hps
 
 
@@ -18,8 +19,11 @@ sha2.o: ./src/sha2/sha2.cpp
 hashesPerSecond.o: $(HASH_SOURCES) ./src/hashesPerSecond.cpp
 	$(CC) -masm=intel $(HASH_SOURCES) -c ./src/hashesPerSecond.cpp -fpermissive
 
-phasum.o: $(HASH_SOURCES) ./src/phasum.cpp
+phasum.o: ./src/pha/pha.cpp ./src/phasum.cpp
 	$(CC) -masm=intel $(HASH_SOURCES) -c ./src/phasum.cpp
+
+sha2sum.o: ./src/sha2/sha2.cpp ./src/sha2sum.cpp
+	$(CC) -masm=intel ./src/sha2/sha2.cpp -c ./src/sha2sum.cpp
 
 clean:
 	rm -rf *.o
