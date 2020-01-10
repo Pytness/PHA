@@ -1,6 +1,5 @@
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <argp.h>
 #include "sha2/sha2.hpp"
 
@@ -22,9 +21,10 @@ typedef struct Arguments {
 	bool capitalize;
 	bool displayRaw;
 	bool newline;
+	bool canExecute;
 } Arguments;
 
-Arguments def_arguments = {nullptr, false, false, false};
+Arguments def_arguments = {nullptr, false, false, false, true};
 
 error_t parse_opt(int key, char * arg, struct argp_state *state) {
 
@@ -32,7 +32,8 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 
 		Arguments * arguments = (Arguments *) state->input;
 
-		char * nextValue = state->argv[state->next];
+		const char * nextValue = state->next < state->argc ?
+			state->argv[state->next] : nullptr;
 
 		switch (key) {
 			case 'c':
@@ -48,7 +49,12 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 				break;
 
 			case 'i':
-				arguments->userInput = nextValue;
+				if (nextValue == nullptr) {
+					arguments->canExecute = false;
+					break;
+				}
+
+				arguments->userInput = (char *) nextValue;
 				break;
 			// default:
 			// 	return ARGP_ERR_UNKNOWN;
@@ -71,6 +77,11 @@ int main(int argc, char * argv[]) {
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
+	if (arguments.canExecute == false) {
+		argp_help(&argp, stdout, ARGP_HELP_STD_HELP, argv[0]);
+		return 1;
+	}
+
 	if (arguments.userInput == nullptr) {
 		arguments.userInput = new char[currentSize];
 
@@ -91,32 +102,22 @@ int main(int argc, char * argv[]) {
 		inputLength = strlen(arguments.userInput);
 	}
 
-	// uint count = 0;
-	// unsigned char result[PHA256_CHAR_DIGEST_SIZE] = {0};
-	//
-	// auto start = std::chrono::high_resolution_clock::now();
-	// std::chrono::duration<double> elapsed;
-	//
-	// do {
-	// 	sha256((const unsigned char *) input, length, result);
-	// 	count += 1;
-	// 	elapsed = std::chrono::high_resolution_clock::now() - start;
-	// } while (elapsed.count() < (double) secs);
-
-
 	uint8_t displayLength = SHA256_DIGEST_SIZE;
 	char * result = NULL;
 
 	if (arguments.displayRaw) {
 		result = new char[displayLength];
-		sha256((const unsigned char *) arguments.userInput, inputLength, (unsigned char *) result);
+
+		sha256((const unsigned char *) arguments.userInput,
+			inputLength, (unsigned char *) result );
 	} else {
 		char * tempResult = new char[displayLength];
 
 		displayLength *= 2;
 		result = new char[displayLength + 1];
 
-		sha256((const unsigned char *) arguments.userInput, inputLength, (unsigned char *) tempResult);
+		sha256((const unsigned char *) arguments.userInput,
+			inputLength, (unsigned char *) tempResult);
 
 		for (uint32_t i = 0; i < SHA256_DIGEST_SIZE; i++)
 			snprintf(&result[i * 2], 3, "%02hhx", tempResult[i]);
