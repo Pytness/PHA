@@ -1,14 +1,15 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string>
 #include <chrono>
 #include "pha/pha.hpp"
 #include "sha2/sha2.hpp"
 
-using namespace std;
-
 void testSHA256(char * input, uint length = 1, uint secs=1) {
 
-	uint count = 0;
+	printf("Testing sha256...\n");
+
+	uint64_t count = 0;
 	unsigned char result[PHA256_CHAR_DIGEST_SIZE] = {0};
 
 	auto start = std::chrono::high_resolution_clock::now();
@@ -20,12 +21,16 @@ void testSHA256(char * input, uint length = 1, uint secs=1) {
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	} while (elapsed.count() < (double) secs);
 
-	printf("SHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
+	const uint64_t blocks = (length / SHA256_BLOCK_SIZE + 1);
+
+	printf("SHA-256: %.15lf hashes/s/block\n", (double)(count) / elapsed.count() * blocks);
 }
 
 void testPHA256(char * input, uint length = 1, uint secs=1) {
 
-	uint count = 0;
+	printf("Testing pha256...\n");
+
+	uint64_t count = 0;
 	char result[PHA256_CHAR_DIGEST_SIZE] = {0};
 	PHA256 pha = PHA256();
 
@@ -38,13 +43,17 @@ void testPHA256(char * input, uint length = 1, uint secs=1) {
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	} while (elapsed.count() < (double) secs);
 
-	printf("PHA-256: %.15lf hashes/s\n", (double)(count) / elapsed.count());
+	const uint64_t blocks = (length / PHA256_CHAR_BLOCK_SIZE + 1);
+
+	printf("PHA-256: %.15lf hashes/s/block\n", (double)(count) / elapsed.count() * blocks);
 }
 
 
 void testPHA512(char * input, uint length = 1, uint secs=1) {
 
-	uint count = 0;
+	printf("Testing pha512...\n");
+
+	uint64_t count = 0;
 	char result[PHA512_CHAR_DIGEST_SIZE];
 	PHA512 pha = PHA512();
 
@@ -57,15 +66,16 @@ void testPHA512(char * input, uint length = 1, uint secs=1) {
 		elapsed = std::chrono::high_resolution_clock::now() - start;
 	}while (elapsed.count() < (double) secs);
 
-	printf("PHA-512: %.15lf hashes/s\n", (double)(count) / elapsed.count());
-}
+	const uint64_t blocks = (length / PHA512_CHAR_BLOCK_SIZE + 1);
 
+	printf("PHA-512: %.15lf hashes/s/block\n", (double)(count) / elapsed.count() * blocks);
+}
 
 
 int main() {
 
-	uint length = 1275;
-	uint seconds = 5;
+	uint length = 1024 * 1024; // 1 MiB
+	uint seconds = 10;
 	char * input = 0;
 
 	while (length == 0) {
