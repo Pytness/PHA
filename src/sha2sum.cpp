@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <argp.h>
 #include "sha2/sha2.hpp"
 
