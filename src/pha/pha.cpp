@@ -1,29 +1,51 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include "pha.hpp"
+
+#define PHA_ROTR(b, r) ((b >> r) | (b << ((sizeof(b) << 3) - r)))
+
+#define PHA256_S1(x) (PHA_ROTR(x,  25) ^ PHA_ROTR(x,  8) ^ PHA_ROTR(x, 17))
+#define PHA256_S2(x) (PHA_ROTR(x,   5) ^ PHA_ROTR(x, 16) ^ PHA_ROTR(x, 30))
+#define PHA256_S3(x) (PHA_ROTR(x,  11) ^ PHA_ROTR(x, 29) ^ PHA_ROTR(x,  2))
+
+#define PHA512_S1(x) (PHA_ROTR(x,  21) ^ PHA_ROTR(x,  9) ^ PHA_ROTR(x, 57))
+#define PHA512_S2(x) (PHA_ROTR(x,  60) ^ PHA_ROTR(x, 17) ^ PHA_ROTR(x, 41))
+#define PHA512_S3(x) (PHA_ROTR(x,  54) ^ PHA_ROTR(x, 22) ^ PHA_ROTR(x, 36))
+
+
+template <typename T>
+T addWithCarry(T a, uint32_t b) {
+
+	asm volatile (
+		// "adc %[a], 0;"
+		"adc rdi, rsi;"
+		"mov rax, rdi;"
+		::
+		: "rax"
+	);
+}
 
 // PHA (generic class)
 
 PHA::PHA() {};
 
-void PHA::digest(char * hexresult, char * message, uint64 message_len) {};
-void PHA::hexdigest(char * hexresult, char * message, uint64 message_len) {};
+void PHA::digest(char * hexresult, char * message, uint64_t message_len) {};
+void PHA::hexdigest(char * hexresult, char * message, uint64_t message_len) {};
 
-uint32 PHA::getDigestSize() {
+uint32_t PHA::getDigestSize() {
 	return this->digest_size;
 }
 
-
 // PHA256
-
 // Define initial and round constants for PHA256 bits
 
-const uint32 PHA256::initial_states[8] = {
+const uint32_t PHA256::initial_states[8] = {
 	0xe6454cd7, 0x8e6ce677, 0x6280b347, 0x0aa84ce7,
 	0xdebc19b7, 0x86e3b356, 0x031f19c6, 0xd732e696
 };
 
-const uint32 PHA256::round_states[64] = {
+const uint32_t PHA256::round_states[64] = {
 	0x536e4d06, 0xfb95e6a6, 0xcfa9b375, 0x77d14d15,
 	0xf40cb385, 0x704819f5, 0x445be6c5, 0xc0974d34,
 	0x68bee6d4, 0x3cd2b3a4, 0xb90e1a14, 0x6135b3b4,
@@ -63,26 +85,27 @@ void PHA256::initializate() {
 
 	this->padding = new char[PHA256_CHAR_BLOCK_SIZE * 2];
 
-	this->createPadding();
+	this->generatePadding();
 }
 
-void PHA256::createPadding() {
-	uint64 length = this->message_length;
-	uint64 padLength = PHA256_CHAR_BLOCK_SIZE - (
-		(length + sizeof(uint64)) % PHA256_CHAR_BLOCK_SIZE
+void PHA256::generatePadding() {
+	uint64_t length = this->message_length;
+
+	uint64_t padLength = PHA256_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64_t)) % PHA256_CHAR_BLOCK_SIZE
 	) ;
 
-	uint64 padIndex = (length / PHA256_CHAR_DIGEST_SIZE) *
+	uint64_t padIndex = (length / PHA256_CHAR_DIGEST_SIZE) *
 		PHA256_CHAR_DIGEST_SIZE;
 
 	this->padIndex = padIndex;
 
-	this->message_full_length = length + padLength + sizeof(uint64);
+	this->message_full_length = length + padLength + sizeof(uint64_t);
 
-	char * unpackedLength = new char[sizeof(uint64)];
-	memcpy(unpackedLength, &length, sizeof(uint64));
+	char * unpackedLength = new char[sizeof(uint64_t)];
+	memcpy(unpackedLength, &length, sizeof(uint64_t));
 
-	uint64 trashLength = length - padIndex;
+	uint64_t trashLength = length - padIndex;
 
 	// Copy 'trash' to padding
 	memcpy(
@@ -95,11 +118,11 @@ void PHA256::createPadding() {
 	memcpy(
 		&this->padding[trashLength],
 		unpackedLength,
-		sizeof(uint64)
+		sizeof(uint64_t)
 	);
 
 	// Count appended bytes
-	trashLength += sizeof(uint64);
+	trashLength += sizeof(uint64_t);
 
 	// Fill padding left with 0s
 	memset(
@@ -108,11 +131,10 @@ void PHA256::createPadding() {
 		0
 	);
 
-	// No longer need unpackedLength
 	delete [] unpackedLength;
 }
 
-void PHA256::getMessageChunk(uint64 index) {
+void PHA256::getMessageChunk(uint64_t index) {
 
 	char * buffer = NULL;
 
@@ -124,23 +146,23 @@ void PHA256::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
-	this->current_chunk = (uint32 *) &buffer[index];
+	this->current_chunk = (uint32_t *) &buffer[index];
 }
 
 void PHA256::workCurrentBlock() {
 
 	// Define registers
-	register uint32 ra = this->current_chunk[0] + this->message_hash[0];
-	register uint32 rb = this->current_chunk[1] + this->message_hash[1];
-	register uint32 rc = this->current_chunk[2] + this->message_hash[2];
-	register uint32 rd = this->current_chunk[3] + this->message_hash[3];
-	register uint32 re = this->current_chunk[4] + this->message_hash[4];
-	register uint32 rf = this->current_chunk[5] + this->message_hash[5];
-	register uint32 rg = this->current_chunk[6] + this->message_hash[6];
-	register uint32 rh = this->current_chunk[7] + this->message_hash[7];
+	register uint32_t ra = this->current_chunk[0] + this->message_hash[0];
+	register uint32_t rb = this->current_chunk[1] + this->message_hash[1];
+	register uint32_t rc = this->current_chunk[2] + this->message_hash[2];
+	register uint32_t rd = this->current_chunk[3] + this->message_hash[3];
+	register uint32_t re = this->current_chunk[4] + this->message_hash[4];
+	register uint32_t rf = this->current_chunk[5] + this->message_hash[5];
+	register uint32_t rg = this->current_chunk[6] + this->message_hash[6];
+	register uint32_t rh = this->current_chunk[7] + this->message_hash[7];
 
 	// Mix registers
-	for (uint32 r = 0; r < PHA256_ROUNDS_PER_BLOCK; r++) {
+	for (uint32_t r = 0; r < PHA256_ROUNDS_PER_BLOCK; r++) {
 		ra ^= rb;
 		rb ^= rc + this->round_states[rc & 0x40];
 		rc ^= rd;
@@ -153,13 +175,22 @@ void PHA256::workCurrentBlock() {
 
 	// Update hash
 	this->message_hash[0] += ra;
-	this->message_hash[1] += rb;
-	this->message_hash[2] += rc;
-	this->message_hash[3] += rd;
-	this->message_hash[4] += re;
-	this->message_hash[5] += rf;
-	this->message_hash[6] += rg;
-	this->message_hash[7] += rh;
+
+	this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
+	this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
+	this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
+	this->message_hash[4] = addWithCarry(this->message_hash[4], re);
+	this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
+	this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
+	this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
+
+	// this->message_hash[1] += rb;
+	// this->message_hash[2] += rc;
+	// this->message_hash[3] += rd;
+	// this->message_hash[4] += re;
+	// this->message_hash[5] += rf;
+	// this->message_hash[6] += rg;
+	// this->message_hash[7] += rh;
 }
 
 void PHA256::getHash(char * result) {
@@ -171,7 +202,7 @@ void PHA256::getHash(char * result) {
 	);
 }
 
-void PHA256::digest(char * result, char * message, uint64 message_len) {
+void PHA256::digest(char * result, char * message, uint64_t message_len) {
 
 	this->current_message = message;
 	this->message_length = message_len;
@@ -179,7 +210,7 @@ void PHA256::digest(char * result, char * message, uint64 message_len) {
 	this->initializate();
 
 	// for each chunk
-	for (uint64 i = 0; i < this->message_full_length; i += PHA256_CHAR_DIGEST_SIZE) {
+	for (uint64_t i = 0; i < this->message_full_length; i += PHA256_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
 	}
@@ -187,14 +218,14 @@ void PHA256::digest(char * result, char * message, uint64 message_len) {
 	this->getHash(result);
 }
 
-void PHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
+void PHA256::hexdigest(char * hexresult, char * message, uint64_t message_len) {
 
 	char * tempResult = new char[PHA256_CHAR_DIGEST_SIZE];
 
 	this->digest(tempResult, message, message_len);
 
 	// result to hex
-	for (uint32 i = 0; i < PHA256_CHAR_DIGEST_SIZE; i++) {
+	for (uint32_t i = 0; i < PHA256_CHAR_DIGEST_SIZE; i++) {
 		snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 	}
 
@@ -205,14 +236,14 @@ void PHA256::hexdigest(char * hexresult, char * message, uint64 message_len) {
 
 // define initial and round constants for PHA512
 
-const uint64 PHA512::initial_states[8] = {
+const uint64_t PHA512::initial_states[8] = {
 	0xe6454cd7aa297f3c, 0x8e6ce677791ca35f,
 	0x6280b34760963571, 0x0aa84ce72f895993,
 	0xdebc19b71702eba5, 0x86e3b356e5f60fc8,
 	0x031f19c69c62c5fc, 0xd732e69683dc580d
 };
 
-const uint64 PHA512::round_states[64] = {
+const uint64_t PHA512::round_states[64] = {
 	0x536e4d063a490e41, 0xfb95e6a6093c3264, 0xcfa9b375f0b5c476, 0x77d14d15bfa8e898,
 	0xf40cb38576159ecd, 0x704819f52c825501, 0x445be6c513fbe712, 0xc0974d34ca689d46,
 	0x68bee6d4995bc169, 0x3cd2b3a480d5537b, 0xb90e1a14374209af, 0x6135b3b406352dd2,
@@ -247,42 +278,34 @@ void PHA512::initializate() {
 		PHA512_CHAR_DIGEST_SIZE
 	);
 
-	// // Fill with 0s
-	// memset(
-	// 	this->current_chunk,
-	// 	PHA512_INT_DIGEST_SIZE,
-	// 	0
-	// );
 
 	// Delete padding if exists
-
-	if (this->padding != NULL) {
+	if (this->padding != NULL)
 		delete [] this->padding;
-	}
 
 	this->padding = new char[PHA512_CHAR_BLOCK_SIZE * 2];
 
-	this->createPadding();
+	this->generatePadding();
 }
 
-void PHA512::createPadding() {
-	uint64 length = this->message_length;
+void PHA512::generatePadding() {
+	uint64_t length = this->message_length;
 
-	uint64 padLength = PHA512_CHAR_BLOCK_SIZE - (
-		(length + sizeof(uint64)) % PHA512_CHAR_BLOCK_SIZE
+	uint64_t padLength = PHA512_CHAR_BLOCK_SIZE - (
+		(length + sizeof(uint64_t)) % PHA512_CHAR_BLOCK_SIZE
 	) ;
 
-	uint64 padIndex = (length / PHA512_CHAR_DIGEST_SIZE) *
+	uint64_t padIndex = (length / PHA512_CHAR_DIGEST_SIZE) *
 		PHA512_CHAR_DIGEST_SIZE;
 
 	this->padIndex = padIndex;
 
-	this->message_full_length = length + padLength + sizeof(uint64);
+	this->message_full_length = length + padLength + sizeof(uint64_t);
 
-	char * unpackedLength = new char[sizeof(uint64)];
-	memcpy(unpackedLength, &length, sizeof(uint64));
+	char * unpackedLength = new char[sizeof(uint64_t)];
+	memcpy(unpackedLength, &length, sizeof(uint64_t));
 
-	uint64 trashLength = length - padIndex;
+	uint64_t trashLength = length - padIndex;
 
 	// Copy 'trash' to padding
 	memcpy(
@@ -295,11 +318,11 @@ void PHA512::createPadding() {
 	memcpy(
 		&this->padding[trashLength],
 		unpackedLength,
-		sizeof(uint64)
+		sizeof(uint64_t)
 	);
 
 	// Count appended bytes
-	trashLength += sizeof(uint64);
+	trashLength += sizeof(uint64_t);
 
 	// Fill padding left with 0s
 	memset(
@@ -311,10 +334,9 @@ void PHA512::createPadding() {
 	delete [] unpackedLength;
 }
 
-void PHA512::getMessageChunk(uint64 index) {
+void PHA512::getMessageChunk(uint64_t index) {
 
 	char * buffer = NULL;
-
 
 	if (index < this->padIndex) {
 		buffer = this->current_message;
@@ -323,30 +345,24 @@ void PHA512::getMessageChunk(uint64 index) {
 		index -= this->padIndex;
 	}
 
-	this->current_chunk = (uint64 *) &buffer[index];
+	this->current_chunk = (uint64_t *) &buffer[index];
 
-	// // Copy chunk
-	// memcpy(
-	// 	this->current_chunk,
-	// 	&buffer[index],
-	// 	sizeof(this->current_chunk)
-	// );
 }
 
 void PHA512::workCurrentBlock() {
 
 	// Define registers
-	register uint64 ra = this->current_chunk[0] + this->message_hash[0];
-	register uint64 rb = this->current_chunk[1] + this->message_hash[1];
-	register uint64 rc = this->current_chunk[2] + this->message_hash[2];
-	register uint64 rd = this->current_chunk[3] + this->message_hash[3];
-	register uint64 re = this->current_chunk[4] + this->message_hash[4];
-	register uint64 rf = this->current_chunk[5] + this->message_hash[5];
-	register uint64 rg = this->current_chunk[6] + this->message_hash[6];
-	register uint64 rh = this->current_chunk[7] + this->message_hash[7];
+	register uint64_t ra = this->current_chunk[0] + this->message_hash[0];
+	register uint64_t rb = this->current_chunk[1] + this->message_hash[1];
+	register uint64_t rc = this->current_chunk[2] + this->message_hash[2];
+	register uint64_t rd = this->current_chunk[3] + this->message_hash[3];
+	register uint64_t re = this->current_chunk[4] + this->message_hash[4];
+	register uint64_t rf = this->current_chunk[5] + this->message_hash[5];
+	register uint64_t rg = this->current_chunk[6] + this->message_hash[6];
+	register uint64_t rh = this->current_chunk[7] + this->message_hash[7];
 
 	// Mix registers
-	for (uint64 r = 0; r < PHA512_ROUNDS_PER_BLOCK; r++) {
+	for (uint64_t r = 0; r < PHA512_ROUNDS_PER_BLOCK; r++) {
 		ra ^= rb;
 		rb ^= rc + this->round_states[rc % 64];
 		rc ^= rd;
@@ -359,13 +375,14 @@ void PHA512::workCurrentBlock() {
 
 	// Update hash
 	this->message_hash[0] += ra;
-	this->message_hash[1] += rb;
-	this->message_hash[2] += rc;
-	this->message_hash[3] += rd;
-	this->message_hash[4] += re;
-	this->message_hash[5] += rf;
-	this->message_hash[6] += rg;
-	this->message_hash[7] += rh;
+
+	this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
+	this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
+	this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
+	this->message_hash[4] = addWithCarry(this->message_hash[4], re);
+	this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
+	this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
+	this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
 }
 
 void PHA512::getHash(char * result) {
@@ -377,7 +394,7 @@ void PHA512::getHash(char * result) {
 	);
 }
 
-void PHA512::digest(char * result, char * message, uint64 message_len) {
+void PHA512::digest(char * result, char * message, uint64_t message_len) {
 
 	this->current_message = message;
 	this->message_length = message_len;
@@ -385,7 +402,7 @@ void PHA512::digest(char * result, char * message, uint64 message_len) {
 	this->initializate();
 
 	// for each chunk
-	for (uint64 i = 0; i < this->message_full_length; i += PHA512_CHAR_DIGEST_SIZE) {
+	for (uint64_t i = 0; i < this->message_full_length; i += PHA512_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
 	}
@@ -393,14 +410,14 @@ void PHA512::digest(char * result, char * message, uint64 message_len) {
 	this->getHash(result);
 }
 
-void PHA512::hexdigest(char * hexresult, char * message, uint64 message_len) {
+void PHA512::hexdigest(char * hexresult, char * message, uint64_t message_len) {
 
 		char * tempResult = new char[PHA512_CHAR_DIGEST_SIZE];
 
 		this->digest(tempResult, message, message_len);
 
 		// result to hex
-		for (uint32 i = 0; i < PHA512_CHAR_DIGEST_SIZE; i++) {
+		for (uint32_t i = 0; i < PHA512_CHAR_DIGEST_SIZE; i++) {
 			snprintf(&hexresult[i * 2], 3, "%02hhx", tempResult[i]);
 		}
 

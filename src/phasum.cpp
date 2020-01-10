@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <argp.h>
-#include "../lib/pha/pha.hpp"
+#include "pha/pha.hpp"
 
 #define CHUNK_SIZE 1024
 

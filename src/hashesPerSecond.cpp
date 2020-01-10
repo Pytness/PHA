@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string>
 #include <chrono>
-#include "../lib/pha/pha.hpp"
-#include "../lib/sha2/sha2.hpp"
+#include "pha/pha.hpp"
+#include "sha2/sha2.hpp"
 
 using namespace std;
 
@@ -64,8 +64,8 @@ void testPHA512(char * input, uint length = 1, uint secs=1) {
 
 int main() {
 
-	uint length = 0;
-	uint seconds = 0;
+	uint length = 1275;
+	uint seconds = 5;
 	char * input = 0;
 
 	while (length == 0) {

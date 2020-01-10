@@ -100,6 +100,5 @@ int main() {
 	printPHA256States(states);
 	printPHA512States(states);
 
-
 	return 0;
 }
