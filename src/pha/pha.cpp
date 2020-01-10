@@ -176,21 +176,21 @@ void PHA256::workCurrentBlock() {
 	// Update hash
 	this->message_hash[0] += ra;
 
-	this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
-	this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
-	this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
-	this->message_hash[4] = addWithCarry(this->message_hash[4], re);
-	this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
-	this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
-	this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
+	// this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
+	// this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
+	// this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
+	// this->message_hash[4] = addWithCarry(this->message_hash[4], re);
+	// this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
+	// this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
+	// this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
 
-	// this->message_hash[1] += rb;
-	// this->message_hash[2] += rc;
-	// this->message_hash[3] += rd;
-	// this->message_hash[4] += re;
-	// this->message_hash[5] += rf;
-	// this->message_hash[6] += rg;
-	// this->message_hash[7] += rh;
+	this->message_hash[1] += rb;
+	this->message_hash[2] += rc;
+	this->message_hash[3] += rd;
+	this->message_hash[4] += re;
+	this->message_hash[5] += rf;
+	this->message_hash[6] += rg;
+	this->message_hash[7] += rh;
 }
 
 void PHA256::getHash(char * result) {
@@ -376,13 +376,21 @@ void PHA512::workCurrentBlock() {
 	// Update hash
 	this->message_hash[0] += ra;
 
-	this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
-	this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
-	this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
-	this->message_hash[4] = addWithCarry(this->message_hash[4], re);
-	this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
-	this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
-	this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
+	// this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
+	// this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
+	// this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
+	// this->message_hash[4] = addWithCarry(this->message_hash[4], re);
+	// this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
+	// this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
+	// this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
+
+	this->message_hash[1] += rb;
+	this->message_hash[2] += rc;
+	this->message_hash[3] += rd;
+	this->message_hash[4] += re;
+	this->message_hash[5] += rf;
+	this->message_hash[6] += rg;
+	this->message_hash[7] += rh;
 }
 
 void PHA512::getHash(char * result) {
