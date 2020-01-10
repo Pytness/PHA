@@ -34,10 +34,16 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 
 		Arguments * arguments = (Arguments *) state->input;
 
-		char * nextValue = state->argv[state->next];
+		const char * nextValue = state->next < state->argc ?
+			state->argv[state->next] : nullptr;
 
 		switch (key) {
 			case 'a':
+				if (nextValue == nullptr) {
+					arguments->canExecute = false;
+					break;
+				}
+
 				switch (atoi(nextValue)) {
 					case 512: arguments->use512Bits = true;
 					case 256: break;
@@ -46,6 +52,7 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 						arguments->canExecute = false;
 						break;
 				}
+				
 				break;
 
 			case 'c':
@@ -61,7 +68,12 @@ error_t parse_opt(int key, char * arg, struct argp_state *state) {
 				break;
 
 			case 'i':
-				arguments->userInput = nextValue;
+				if (nextValue == nullptr) {
+					arguments->canExecute = false;
+					break;
+				}
+
+				arguments->userInput = (char *) nextValue;
 				break;
 			// default:
 			// 	return ARGP_ERR_UNKNOWN;
@@ -80,21 +92,14 @@ int main(int argc, char *argv[]) {
 	unsigned long int i = 0;
 	unsigned long int inputLength = 0;
 
-	PHA * pha = NULL;
-	char * result = NULL;
-
-	int displayLength = 0;
-
 	Arguments arguments = def_arguments;
 
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
-
 
 	if (arguments.canExecute == false) {
 		argp_help(&argp, stdout, ARGP_HELP_STD_HELP, argv[0]);
 		return 1;
 	}
-
 
 	if (arguments.userInput == 0) {
 		arguments.userInput = new char[currentSize];
@@ -116,20 +121,15 @@ int main(int argc, char *argv[]) {
 		inputLength = strlen(arguments.userInput);
 	}
 
+	PHA * pha = arguments.use512Bits ?
+		(PHA *) new PHA512() : (PHA *) new PHA256();
 
-
-	if (arguments.use512Bits) {
-		pha = new PHA512();
-	} else {
-		pha = new PHA256();
-	}
-
-	displayLength = pha->getDigestSize();
+	uint8_t displayLength = pha->getDigestSize();
+	char * result = NULL;
 
 	if (arguments.displayRaw) {
 		result = new char[displayLength];
 		pha->digest(result, arguments.userInput, inputLength);
-
 	} else {
 		displayLength = displayLength * 2 + 1;
 		result = new char[displayLength];
