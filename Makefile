@@ -14,7 +14,7 @@ pha.o: ./src/pha/pha.cpp
 	$(CC) $(FLAGS) -masm=intel -c ./src/pha/pha.cpp -o pha.o
 
 sha2.o: ./src/sha2/sha2.cpp
-	$(CC) $(FLAGS) -c ./src/sha2/sha2.cpp -o sha2.o
+	$(CC) $(FLAGS) -masm=intel -c ./src/sha2/sha2.cpp -o sha2.o
 
 hashesPerSecond.o: $(HASH_SOURCES) ./src/hashesPerSecond.cpp
 	$(CC) $(FLAGS) -masm=intel $(HASH_SOURCES) -c ./src/hashesPerSecond.cpp -fpermissive
