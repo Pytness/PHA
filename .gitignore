@@ -2,3 +2,6 @@
 out/
 *.o
 *.so
+hps
+phasum
+sha2sum
