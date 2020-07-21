@@ -6,17 +6,13 @@ A custom hash algorithm made in c++
 
 Supports 256 bit and 512 bit digests
 
-## THIS IS A NON SECURE HASH ALGORITHM AND IT SHOULD NOT BE USED FOR ANY PRODUCTION PURPOSES
+#### This is a non secure hash algorithm and it should not be used for any production purposes
 
 ## phasum
-#### Compile
+#### Build
 
 ```bash
-g++ lib/pha.cpp src/phasum.cpp -o phasum
-
-# or
-
-cd src; ./build.sh
+make
 ```
 
 #### Usage
@@ -33,4 +29,22 @@ Print PHA checksums
   -r, --raw                  print raw checksum instead of hex
   -?, --help                 Give this help list
       --usage                Give a short usage message
+```
+
+```
+$ ./sha2sum --help
+Usage: sha2sum [OPTION...]
+Print SHA2 checksums
+
+  -c, --capitalize           print checksum in capital letters
+  -i, --input                take input from argument
+  -l, --newline              append a \n to the output
+  -r, --raw                  print raw checksum instead of hex
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+```
+
+
+```
+$ ./hps
 ```
