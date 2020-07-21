@@ -64,9 +64,9 @@ void testPHA512(char * input, uint length = 1, uint secs=1) {
 
 int main() {
 
-	uint length = 1275;
+	uint length = 1;
 	uint seconds = 5;
-	char * input = 0;
+	char * input = nullptr;
 
 	while (length == 0) {
 		printf("Enter the length  (greater than 0): ");
