@@ -13,6 +13,15 @@
 #define PHA512_S2(x) (PHA_ROTR(x,  60) ^ PHA_ROTR(x, 17) ^ PHA_ROTR(x, 41))
 #define PHA512_S3(x) (PHA_ROTR(x,  54) ^ PHA_ROTR(x, 22) ^ PHA_ROTR(x, 36))
 
+// #define ENABLE_DEBUG 1
+
+#ifdef ENABLE_DEBUG
+#define _DEBUG printf
+#define _DEBUG_CODE if (true)
+#else
+#define _DEBUG(...) /**/
+#define _DEBUG_CODE if (false)
+#endif
 
 template <typename T>
 T addWithCarry(T a, uint32_t b) {
@@ -25,6 +34,14 @@ T addWithCarry(T a, uint32_t b) {
 		: "rax"
 	);
 }
+
+void print_hex(char * data, uint64_t length, bool new_line = false) {
+	for (int64_t i = 0; i < length; i++)
+		printf("%02hhx", data[i]);
+
+	if (new_line) printf("\n");
+}
+
 
 // PHA (generic class)
 
@@ -65,12 +82,16 @@ const uint32_t PHA256::round_states[64] = {
 };
 
 PHA256::PHA256() {
+	_DEBUG("new PHA256. %d bytes at %p, \n", sizeof(PHA256), this);
+
 	this->padding = NULL;
 	this->current_chunk = NULL;
 	this->digest_size = PHA256_CHAR_DIGEST_SIZE;
 }
 
 void PHA256::initializate() {
+
+	_DEBUG("PHA256(%p) initializing\n", this);
 
 	// Reset hash
 	memcpy(
@@ -83,12 +104,14 @@ void PHA256::initializate() {
 	if (this->padding != NULL)
 		delete [] this->padding;
 
-	this->padding = new char[PHA256_CHAR_BLOCK_SIZE * 2];
+	this->padding = new char[PHA256_CHAR_BLOCK_SIZE * 2]();
 
 	this->generatePadding();
 }
 
 void PHA256::generatePadding() {
+	_DEBUG("PHA256(%p) generating padding\n", this);
+
 	uint64_t length = this->message_length;
 
 	uint64_t padLength = PHA256_CHAR_BLOCK_SIZE - (
@@ -136,6 +159,8 @@ void PHA256::generatePadding() {
 
 void PHA256::getMessageChunk(uint64_t index) {
 
+	_DEBUG("PHA256(%p) getting message chunk\n", this);
+
 	char * buffer = NULL;
 
 	// Get chunk either from padded message or message
@@ -151,6 +176,8 @@ void PHA256::getMessageChunk(uint64_t index) {
 
 void PHA256::workCurrentBlock() {
 
+	_DEBUG("PHA256(%p) working block\n", this);
+
 	// Define registers
 	register uint32_t ra = this->current_chunk[0] + this->message_hash[0];
 	register uint32_t rb = this->current_chunk[1] + this->message_hash[1];
@@ -163,37 +190,30 @@ void PHA256::workCurrentBlock() {
 
 	// Mix registers
 	for (uint32_t r = 0; r < PHA256_ROUNDS_PER_BLOCK; r++) {
-		ra ^= rb;
-		rb ^= rc + this->round_states[rc & 0x40];
-		rc ^= rd;
-		rd ^= PHA256_S1(~re);
-		re ^= rf;
-		rf ^= PHA256_S2(rg);
-		rg ^= rh;
-		rh ^= PHA256_S3(~ra);
+		rh += PHA256_S1(~ra);
+		rg += rh;
+		rf += PHA256_S2(~rg);
+		re += rf;
+		rd += PHA256_S3(~re);
+		rc += rd;
+		rb += rc + this->round_states[rb % 64];
+		ra += rb;
 	}
 
-	// Update hash
-	this->message_hash[0] += ra;
-
-	// this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
-	// this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
-	// this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
-	// this->message_hash[4] = addWithCarry(this->message_hash[4], re);
-	// this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
-	// this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
-	// this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
-
-	this->message_hash[1] += rb;
-	this->message_hash[2] += rc;
-	this->message_hash[3] += rd;
-	this->message_hash[4] += re;
-	this->message_hash[5] += rf;
-	this->message_hash[6] += rg;
-	this->message_hash[7] += rh;
+	this->message_hash[0] = ra;
+	this->message_hash[1] = rb;
+	this->message_hash[2] = rc;
+	this->message_hash[3] = rd;
+	this->message_hash[4] = re;
+	this->message_hash[5] = rf;
+	this->message_hash[6] = rg;
+	this->message_hash[7] = rh;
 }
 
 void PHA256::getHash(char * result) {
+
+	_DEBUG("PHA256(%p) getting hash\n", this);
+
 	// Copy hash into result
 	memcpy(
 		result,
@@ -204,15 +224,39 @@ void PHA256::getHash(char * result) {
 
 void PHA256::digest(char * result, char * message, uint64_t message_len) {
 
+	_DEBUG("PHA256(%p) digesting %d bytes\n", this, message_len);
+
+	// printf("message: '%s'\n", message);
+	// printf("message_len: %d\n", message_len);
 	this->current_message = message;
 	this->message_length = message_len;
 
 	this->initializate();
 
+	_DEBUG_CODE {
+		printf("\tCurrent message dump ", this->message_length);
+		print_hex(this->current_message, this->message_length, true);
+
+		printf("\tPadding ", this->message_length);
+		print_hex(this->padding, 32, true);
+
+		printf("\tInitial states: ");
+		print_hex((char *) this->initial_states, 32, true);
+
+		printf("\tMessage hash: ");
+		print_hex((char *) this->message_hash, 32, true);
+	}
+
+
 	// for each chunk
 	for (uint64_t i = 0; i < this->message_full_length; i += PHA256_CHAR_DIGEST_SIZE) {
 		this->getMessageChunk(i);
 		this->workCurrentBlock();
+
+		_DEBUG_CODE {
+			printf("\tMessage hash: ");
+			print_hex((char *) this->message_hash, 32, true);
+		}
 	}
 
 	this->getHash(result);
@@ -368,29 +412,20 @@ void PHA512::workCurrentBlock() {
 		rc ^= rd;
 		rd ^= PHA512_S1(~re);
 		re ^= rf;
-		rf ^= PHA512_S2(rg);
+		rf ^= PHA512_S2(~rg);
 		rg ^= rh;
 		rh ^= PHA512_S3(~ra);
 	}
 
 	// Update hash
-	this->message_hash[0] += ra;
-
-	// this->message_hash[1] = addWithCarry(this->message_hash[1], rb);
-	// this->message_hash[2] = addWithCarry(this->message_hash[2], rc);
-	// this->message_hash[3] = addWithCarry(this->message_hash[3], rd);
-	// this->message_hash[4] = addWithCarry(this->message_hash[4], re);
-	// this->message_hash[5] = addWithCarry(this->message_hash[5], rf);
-	// this->message_hash[6] = addWithCarry(this->message_hash[6], rg);
-	// this->message_hash[7] = addWithCarry(this->message_hash[7], rh);
-
-	this->message_hash[1] += rb;
-	this->message_hash[2] += rc;
-	this->message_hash[3] += rd;
-	this->message_hash[4] += re;
-	this->message_hash[5] += rf;
-	this->message_hash[6] += rg;
-	this->message_hash[7] += rh;
+	this->message_hash[0] = ra;
+	this->message_hash[1] = rb;
+	this->message_hash[2] = rc;
+	this->message_hash[3] = rd;
+	this->message_hash[4] = re;
+	this->message_hash[5] = rf;
+	this->message_hash[6] = rg;
+	this->message_hash[7] = rh;
 }
 
 void PHA512::getHash(char * result) {
