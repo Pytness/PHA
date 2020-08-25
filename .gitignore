@@ -1,4 +1,5 @@
 .ccls-cache/
+__pycache__
 out/
 *.o
 *.so
