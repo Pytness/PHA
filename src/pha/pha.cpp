@@ -327,7 +327,7 @@ void PHA512::initializate() {
 	if (this->padding != NULL)
 		delete [] this->padding;
 
-	this->padding = new char[PHA512_CHAR_BLOCK_SIZE * 2];
+	this->padding = new char[PHA512_CHAR_BLOCK_SIZE * 2]();
 
 	this->generatePadding();
 }
