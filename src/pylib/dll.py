@@ -1,37 +1,34 @@
 #!/usr/bin/env python3
 
+'''Provides PHA256'''
+
 import ctypes
 import pathlib
-import numpy as np
-import hashlib
-import os
-from timeit import default_timer as timer
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.colors import LightSource
 
 # Load the shared library into ctypes
-libname = pathlib.Path().absolute() / "libpha.so"
-phalib = ctypes.CDLL(libname)
+LIBNAME = pathlib.Path().absolute() / "libpha.so"
+PHALIB = ctypes.CDLL(LIBNAME)
 
-phalib.PHA256_new.argtypes = []
-phalib.PHA256_new.restype = ctypes.c_void_p
+PHALIB.PHA256_new.argtypes = []
+PHALIB.PHA256_new.restype = ctypes.c_void_p
 
-phalib.digest.argtypes = [
+PHALIB.digest.argtypes = [
 	ctypes.c_void_p,
 	ctypes.POINTER(ctypes.c_ubyte),
 	ctypes.POINTER(ctypes.c_ubyte),
 	ctypes.c_uint64,
 ]
-phalib.digest.restype = None
+PHALIB.digest.restype = None
 
-class PHA256(object):
+class PHA256():
+	'''A PHA-256 hash object'''
 	def __init__(self):
-		self.__pha_instance__ = ctypes.c_void_p(phalib.PHA256_new())
-		# print(f'pha instance: {self.__pha_instance__}')
+		self.__pha_instance__ = ctypes.c_void_p(PHALIB.PHA256_new())
 
 	def digest(self, data):
-		if not type(data) is bytes:
+		'''Return the digest of the bytes passed as a bytes object.'''
+
+		if not isinstance(data, bytes):
 			raise ValueError('Data must be bytes')
 
 		raw_digest_buffer = ctypes.cast(
@@ -46,7 +43,7 @@ class PHA256(object):
 
 		data_length = ctypes.c_uint64(len(data))
 
-		phalib.digest(self.__pha_instance__, raw_digest_buffer, raw_data, data_length)
+		PHALIB.digest(self.__pha_instance__, raw_digest_buffer, raw_data, data_length)
 
 		del data
 		del raw_data
@@ -59,4 +56,5 @@ class PHA256(object):
 		return digest_bytes
 
 	def hexdigest(self, data):
+		'''Return the digest of the bytes passed as the hexadecimal representation of the bytes object.'''
 		return self.digest(data).hex()
